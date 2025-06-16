@@ -1,64 +1,28 @@
 version: 0.2
 
+env:
+  variables:
+    IMAGE_TAG: "latest"
+    REPO_NAME: "spring-microservices"
+
 phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws --version
-      - $(aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com)
-      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-      - echo Building tag...
-      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - echo Build started on `date`
 
   build:
     commands:
-      - echo Build started on `date`
-      - echo Building microservices and tagging Docker images...
-      - ./gradlew clean build -x test
-
-      # Build and tag each microservice image
-      - docker build -t $REPOSITORY_URI/eureka-server:$IMAGE_TAG ./eureka-server
-      - docker build -t $REPOSITORY_URI/api-gateway:$IMAGE_TAG ./api-gateway
-      - docker build -t $REPOSITORY_URI/order-service:$IMAGE_TAG ./order-service
-      - docker build -t $REPOSITORY_URI/product-service:$IMAGE_TAG ./product-service
-      - docker build -t $REPOSITORY_URI/customer-service:$IMAGE_TAG ./customer-service
+      - echo Building Docker images...
+      - docker-compose -f docker-compose.yml build
 
   post_build:
     commands:
-      - echo Pushing Docker images to ECR...
-      - docker push $REPOSITORY_URI/eureka-server:$IMAGE_TAG
-      - docker push $REPOSITORY_URI/api-gateway:$IMAGE_TAG
-      - docker push $REPOSITORY_URI/order-service:$IMAGE_TAG
-      - docker push $REPOSITORY_URI/product-service:$IMAGE_TAG
-      - docker push $REPOSITORY_URI/customer-service:$IMAGE_TAG
-
-      - echo Writing image definitions file for CodeDeploy...
-      - |
-        cat > imagedefinitions.json <<EOF
-        [
-          {
-            "name": "eureka-server",
-            "imageUri": "$REPOSITORY_URI/eureka-server:$IMAGE_TAG"
-          },
-          {
-            "name": "api-gateway",
-            "imageUri": "$REPOSITORY_URI/api-gateway:$IMAGE_TAG"
-          },
-          {
-            "name": "order-service",
-            "imageUri": "$REPOSITORY_URI/order-service:$IMAGE_TAG"
-          },
-          {
-            "name": "product-service",
-            "imageUri": "$REPOSITORY_URI/product-service:$IMAGE_TAG"
-          },
-          {
-            "name": "customer-service",
-            "imageUri": "$REPOSITORY_URI/customer-service:$IMAGE_TAG"
-          }
-        ]
-        EOF
-
+      - echo Build completed on `date`
+      # Optional: push to ECR if needed
+      # - docker tag your-image:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/your-repo:latest
+      # - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/your-repo:latest
 artifacts:
   files:
-    - imagedefinitions.json
+    - '**/*'
