@@ -1,20 +1,25 @@
+# ---- Stage 1: Build ----
 FROM gradle:8.8-jdk17 AS build
 WORKDIR /spring-boot-microservices
-COPY settings.gradle gradlew gradle /spring-boot-microservices/
-COPY gradle-wrapper.jar /spring-boot-microservices/gradle/wrapper/
-COPY build.gradle /spring-boot-microservices/
-RUN gradle wrapper
 
+# Copy gradle config files
+COPY settings.gradle build.gradle gradlew /spring-boot-microservices/
+COPY gradle /spring-boot-microservices/gradle/
+
+# Copy rest of the code
 COPY . /spring-boot-microservices/
-RUN gradle clean assemble -x test
 
+# Build without tests
+RUN ./gradlew clean build -x test
+
+# ---- Stage 2: Base runtime ----
 FROM openjdk:17-jdk-alpine
 WORKDIR /app
 
-COPY --from=build /spring-boot-microservices/build/libs/*.jar /app/
+# Copy all built JARs
+COPY --from=build /spring-boot-microservices/**/build/libs/*.jar /app/
 
-EXPOSE 8761 8088 8081 8082 8083 8090
+# Just expose ports, don't run all services in one container
+EXPOSE 8761 8080 8081 8082 8083
 
-ENTRYPOINT ["java", "-jar", "/app/*.jar"]
-
-
+CMD ["sh"]
