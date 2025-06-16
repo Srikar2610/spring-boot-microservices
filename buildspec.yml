@@ -1,28 +1,31 @@
 version: 0.2
 
-env:
-  variables:
-    IMAGE_TAG: "latest"
-    REPO_NAME: "spring-microservices"
-
 phases:
+  install:
+    runtime-versions:
+      docker: 20
+    commands:
+      - echo Installing dependencies...
+
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-      - echo Build started on `date`
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 026090550003.dkr.ecr.us-east-1.amazonaws.com
 
   build:
     commands:
-      - echo Building Docker images...
-      - docker-compose -f docker-compose.yml build
+      - echo Building Docker images with docker-compose...
+      - docker-compose build
 
   post_build:
     commands:
-      - echo Build completed on `date`
-      # Optional: push to ECR if needed
-      # - docker tag your-image:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/your-repo:latest
-      # - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/your-repo:latest
+      - echo Pushing images to Amazon ECR...
+      - docker push 026090550003.dkr.ecr.us-east-1.amazonaws.com/eureka-server
+      - docker push 026090550003.dkr.ecr.us-east-1.amazonaws.com/api-gateway
+      - docker push 026090550003.dkr.ecr.us-east-1.amazonaws.com/order-service
+      - docker push 026090550003.dkr.ecr.us-east-1.amazonaws.com/product-service
+      - docker push 026090550003.dkr.ecr.us-east-1.amazonaws.com/customer-service
+
 artifacts:
   files:
     - '**/*'
