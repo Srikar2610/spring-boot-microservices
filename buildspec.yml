@@ -14,12 +14,16 @@ phases:
 
   build:
     commands:
-      - echo Building Docker images with docker-compose...
-      - docker-compose build
+      - echo Building Docker images individually...
+      - docker build -t 026090550003.dkr.ecr.us-east-1.amazonaws.com/eureka-server ./eureka-server
+      - docker build -t 026090550003.dkr.ecr.us-east-1.amazonaws.com/api-gateway ./api-gateway
+      - docker build -t 026090550003.dkr.ecr.us-east-1.amazonaws.com/order-service ./order-service
+      - docker build -t 026090550003.dkr.ecr.us-east-1.amazonaws.com/product-service ./product-service
+      - docker build -t 026090550003.dkr.ecr.us-east-1.amazonaws.com/customer-service ./customer-service
 
   post_build:
     commands:
-      - echo Pushing images to Amazon ECR...
+      - echo Pushing Docker images to Amazon ECR...
       - docker push 026090550003.dkr.ecr.us-east-1.amazonaws.com/eureka-server
       - docker push 026090550003.dkr.ecr.us-east-1.amazonaws.com/api-gateway
       - docker push 026090550003.dkr.ecr.us-east-1.amazonaws.com/order-service
